@@ -1,0 +1,6 @@
+.sticky {
+  position: sticky;
+  top: 0;
+  background-color: #000;
+  color: #fff;
+}

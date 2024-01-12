@@ -1,0 +1,126 @@
+#create a trigger for person table, 
+-- Create the trigger function
+CREATE OR REPLACE FUNCTION update_married_status()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE person
+    SET married_status = 'đã kết hôn'
+    WHERE person.person_id = NEW.husband_id OR person.person_id = NEW.wife_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger
+CREATE TRIGGER married_register_trigger
+AFTER INSERT ON married_register
+FOR EACH ROW
+EXECUTE FUNCTION update_married_status();
+
+
+#create an trigger for disvorce =========> update married_status to "da li hon"
+-- Create the trigger function for divorce
+CREATE OR REPLACE FUNCTION divorce_status()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE person
+    SET married_status = 'đã li hôn'
+    WHERE person.person_id = NEW.person_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+-- Create the trigger
+CREATE TRIGGER divorce_trigger
+AFTER INSERT ON used_to_married
+FOR EACH ROW
+EXECUTE FUNCTION divorce_status();
+
+
+#create an trigger for married_register =============> update husband and wife id = 0
+DROP TRIGGER IF EXISTS update_married_register_trigger ON used_to_married;
+
+-- Create the trigger function for divorce
+CREATE OR REPLACE FUNCTION update_married_register()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE married_register
+    SET husband_id = 0, wife_id = 0
+    WHERE married_id = NEW.married_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create the trigger
+CREATE TRIGGER update_married_register_trigger
+BEFORE INSERT ON used_to_married
+FOR EACH ROW
+EXECUTE FUNCTION update_married_register();
+
+
+#create trigger when transform a person from a family to another
+CREATE OR REPLACE FUNCTION update_family_mem_number()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Increment num_members for the new family
+    IF NEW.family_id IS NOT NULL THEN
+        UPDATE family
+        SET num_members = num_members + 1
+        WHERE family_id = NEW.family_id;
+    END IF;
+
+    -- Decrement num_members for the old family
+    IF OLD.family_id IS NOT NULL THEN
+        UPDATE family
+        SET num_members = num_members - 1
+        WHERE family_id = OLD.family_id;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_family_mem_number
+AFTER UPDATE OF family_id ON person
+FOR EACH ROW
+EXECUTE FUNCTION update_family_mem_number();
+
+#trigger for update the relation_with_owner in person table when create new family
+CREATE OR REPLACE FUNCTION update_relation_with_owner()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update relation_with_owner in person table based on the new family
+    UPDATE person
+    SET relation_owner_home = 'chủ hộ', family_id = NEW.family_id
+    WHERE person.person_id = NEW.owner_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_relation_with_owner
+AFTER INSERT ON family
+FOR EACH ROW
+EXECUTE FUNCTION update_relation_with_owner();
+
+-- trigger for auto save the old family when person transform to new_family
+create or replace function insert_used_belong_family()
+returns trigger as $$
+
+begin
+  if not exists(
+  select 1 from used_to_belong_family
+	  where old_family = new.family_id and person_id = new.person_id
+	  
+  )then
+     INSERT INTO used_to_belong_family (person_id, relation_old_person, old_family)
+     VALUES (old.person_id, OLD.relation_owner_home, OLD.family_id);  
+  END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER insert_used_family_trigger
+AFTER UPDATE OF family_id ON person
+FOR EACH ROW
+EXECUTE FUNCTION insert_used_belong_family();
+
+
+
+

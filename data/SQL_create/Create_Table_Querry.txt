@@ -1,0 +1,75 @@
+-- Create the family table
+CREATE TABLE family (
+    family_id INTEGER PRIMARY KEY,
+    owner_id INTEGER,
+    num_members INTEGER
+);
+
+-- Create the person table
+CREATE TABLE person (
+    person_id int PRIMARY KEY,
+    full_name VARCHAR(60),
+    que_quan_tinh varchar(30),
+    que_quan_huyen varchar(30),
+    que_quan_xa varchar(30),
+    family_id int,
+    gender varchar(20) CHECK (gender IN ('Nam', 'Nữ')),
+    relation_owner_home varchar(30),
+    married_status varchar(20) CHECK (married_status IN ('độc thân', 'đã kết hôn', 'đã li hôn')),
+    dob DATE,
+    mother_id INTEGER, 
+    father_id INTEGER,
+	foreign key (family_id) references family (family_id)
+);
+
+-- Create the used_to_belong_family table
+Create table used_to_belong_family(
+	person_id integer references person(person_id) ,
+	relation_old_person varchar(30),
+	old_family integer references family(family_id),
+	primary key(person_id,old_family)
+);
+
+-- Create the married_register table
+CREATE TABLE married_register (
+    husband_id int,
+    wife_id int,
+    married_id int primary key,
+    date_married date not null,
+    family_id int,
+    UNIQUE (husband_id, wife_id),
+    foreign key (family_id) references family (family_id)
+);
+
+-- Create the insurance table
+CREATE TABLE insurance (
+    person_id INTEGER references person(person_id),
+    insurance_name VARCHAR(100),
+    price DOUBLE PRECISION,
+    insurance_id INTEGER primary key
+);
+
+-- Create the used_to_married table
+CREATE TABLE used_to_married (
+    person_id integer references person(person_id),
+	married_id integer references married_register(married_id),
+	primary key(married_id,person_id)
+);
+
+-- Create the electric_info table
+CREATE TABLE electric_info (
+    electric_id int primary key,
+    family_id int,
+    price int,
+    curr_day date,
+    foreign key (family_id) references family (family_id)
+);
+
+-- Create the users table
+CREATE TABLE users (
+    identification INTEGER,
+    hash_pass VARCHAR(255),
+    refreshtoken VARCHAR(255),
+    phone VARCHAR(11)
+);
+

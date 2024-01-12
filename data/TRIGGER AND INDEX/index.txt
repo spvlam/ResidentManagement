@@ -1,0 +1,14 @@
+-- Create an index for the person_id column in the person table
+CREATE INDEX idx_person_person_id ON person using btree (person_id) 
+
+--create an index for searching similar name by trigram index
+-- note : you should install the pg_trgm package for gin_trgm_ops function
+CREATE EXTENSION pg_trgm;
+-- Create a trigram index on the full_name column
+CREATE INDEX idx_person_full_name_trgm ON person USING gin (full_name gin_trgm_ops);
+
+
+-- create an index for searching family_id
+CREATE INDEX idx_family_familyid ON family USING btree (family_id);
+
+--
